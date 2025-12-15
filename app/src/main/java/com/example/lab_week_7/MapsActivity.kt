@@ -2,6 +2,7 @@ package com.example.lab_week_7
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
@@ -9,16 +10,23 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
-
-    // Launcher permission
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
+
+    // Fused Location Provider
+    private val fusedLocationProviderClient by lazy {
+        LocationServices.getFusedLocationProviderClient(this)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +50,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
+
+        // 🔥 TEST DEFAULT (biar tidak blank)
+        val jakarta = LatLng(-6.2, 106.816666)
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(jakarta, 10f))
 
         when {
             hasLocationPermission() -> getLastLocation()
@@ -70,8 +82,41 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .show()
     }
 
-    // PART 1 → hanya log
+    // PART 2 — Ambil lokasi user
     private fun getLastLocation() {
-        Log.d("MapsActivity", "getLastLocation() called.")
+        if (hasLocationPermission()) {
+            try {
+                fusedLocationProviderClient.lastLocation
+                    .addOnSuccessListener { location: Location? ->
+                        if (location != null) {
+                            val userLocation =
+                                LatLng(location.latitude, location.longitude)
+
+                            updateMapLocation(userLocation)
+                            addMarkerAtLocation(userLocation, "You")
+                        } else {
+                            Log.d("MapsActivity", "Location is null")
+                        }
+                    }
+            } catch (e: SecurityException) {
+                Log.e("MapsActivity", "SecurityException: ${e.message}")
+            }
+        } else {
+            requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+        }
+    }
+
+    private fun updateMapLocation(location: LatLng) {
+        mMap.moveCamera(
+            CameraUpdateFactory.newLatLngZoom(location, 12f)
+        )
+    }
+
+    private fun addMarkerAtLocation(location: LatLng, title: String) {
+        mMap.addMarker(
+            MarkerOptions()
+                .position(location)
+                .title(title)
+        )
     }
 }
