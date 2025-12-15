@@ -11,9 +11,10 @@
         android:label="@string/app_name"
         android:theme="@style/Theme.LAB_WEEK_7">
 
+        <!-- 🔐 API KEY diambil dari Gradle -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCTbfU3uYN6Y5EdeZigZYTlEBPHFJ-RpHM" />
+            android:value="${MAPS_API_KEY}" />
 
         <activity
             android:name=".MapsActivity"
